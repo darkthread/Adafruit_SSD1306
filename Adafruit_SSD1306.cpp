@@ -914,6 +914,99 @@ bool Adafruit_SSD1306::getPixel(int16_t x, int16_t y) {
 */
 uint8_t *Adafruit_SSD1306::getBuffer(void) { return buffer; }
 
+/*!
+    @brief  Scroll one row (8px) up if the cursor Y is at the bottom row
+*/
+void Adafruit_SSD1306::scrollUp() {
+  if (this->getCursorY() >= this->height() - 8) {
+    int addrOffset =  WIDTH;
+    int bufferLen = WIDTH * ((HEIGHT + 7) / 8);
+    for (int i = addrOffset; i < bufferLen; i++)
+    {
+        buffer[i - addrOffset] = buffer[i];
+    }
+    for (int i = bufferLen - addrOffset; i < bufferLen; i++) {
+        buffer[i] = 0;
+    }
+    setCursor(0, this->height() - 8);
+  }
+  else {
+    this->println();
+  }
+}
+
+/*!
+    @brief  Print the text at current position with text size 1 (8px height), 
+            if the string is longer than remaining space of current row,
+            it will scroll up and print at next row.
+    @param  text 
+            The String object to print
+    @param  lineFeed 
+            Move the cursor to new row?
+*/
+
+void Adafruit_SSD1306::ttyPrint(String text, bool lineFeed) {
+  //if text contains \n, split as texts and ttyPrintln them
+  if (text.indexOf('\n') > -1) {
+    int fromIdx = 0;
+    auto textLen = text.length();
+    for (int i = 0; i < textLen; i++) {
+      if (text[i] == '\n') {
+        if (i > fromIdx && i <= textLen)
+          this->ttyPrintln(text.substring(fromIdx, i));
+        else
+          this->ttyPrintln();
+        fromIdx = i + 1;
+      }
+    }
+    if (fromIdx < textLen) {
+      this->ttyPrint(text.substring(fromIdx, textLen));
+    }
+    return;
+  }
+
+  this->setTextSize(1); //set 8x height always
+  auto charCountLeft = (WIDTH - this->getCursorX()) / 6;
+  if (text.length() <= charCountLeft) {
+    this->print(text);
+  }
+  else  
+  {
+    this->print(text.substring(0, charCountLeft));
+    scrollUp();
+    auto idx = charCountLeft;
+    while (text.length() - idx > 0) {
+      auto remainLen = text.length() - idx;
+      if (remainLen > 21) {
+        this->print(text.substring(idx, idx + 21));
+        idx += 21;
+        scrollUp();
+      }
+      else {
+        this->print(text.substring(idx, idx + remainLen));
+        idx += remainLen;
+      }
+    }
+  }
+  if (lineFeed) scrollUp();
+}
+
+/*!
+    @brief  ttyPrint with line feed
+    @param  text 
+            The String object to print    
+*/
+void Adafruit_SSD1306::ttyPrintln(String text) {
+  this->ttyPrint(text, true);
+}
+
+/*!
+    @brief  Print line feed
+*/
+void Adafruit_SSD1306::ttyPrintln() {
+  this->scrollUp();
+}
+
 // REFRESH DISPLAY ---------------------------------------------------------
 
 /*!

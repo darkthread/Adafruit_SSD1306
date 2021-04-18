@@ -159,6 +159,10 @@ public:
   void ssd1306_command(uint8_t c);
   bool getPixel(int16_t x, int16_t y);
   uint8_t *getBuffer(void);
+  void scrollUp();
+  void ttyPrint(String text, bool lineFeed = false);
+  void ttyPrintln(String text);
+  void ttyPrintln();
 
 private:
   inline void SPIwrite(uint8_t d) __attribute__((always_inline));
@@ -169,7 +173,7 @@ private:
 
   SPIClass *spi;
   TwoWire *wire;
-  uint8_t *buffer;
+  uint8_t *buffer;  
   int8_t i2caddr, vccstate, page_end;
   int8_t mosiPin, clkPin, dcPin, csPin, rstPin;
 #ifdef HAVE_PORTREG
